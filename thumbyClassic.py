@@ -1,3 +1,16 @@
+"""
+A hybrid engine/wrapper API that is designed similarly to the original Thumby API.
+
+Authors:
+    Demod
+Version:
+    0.0.0 (TBD)
+    
+Conversion notes from Thumby API to Classic API:
+    (TODO)
+
+"""
+
 import engine_main
 
 import engine
@@ -9,26 +22,72 @@ from engine_resources import TextureResource
 import framebuf
 
 class Button:
-    #TODO access pin directly instead through engine
+    """Buttons are A, B, UP, DOWN, LEFT, RIGHT, LB, RB, and MENU."""
+    
+    #Initialized later
+    A = None
+    """A Button - Far right button."""
+    B = None
+    """B Button - Inside right button."""
+    UP = None
+    """Up Button - Up on the d-pad."""
+    DOWN = None
+    """Down Button - Down on the d-pad."""
+    LEFT = None
+    """Left Button - Left on the d-pad."""
+    RIGHT = None
+    """Right Button - Right on the d-pad."""
+    LB = None
+    """Left Bumper Button - Top left button."""
+    RB = None
+    """Right Bumper Button - Top right button."""
+    MENU = None
+    """Menu Button - Bottom left button."""
+    
     def __init__(self,btn):
+        """DO NOT USE -- instead please use:<br><br>
+        Button.A<br>
+        Button.B<br>
+        Button.UP<br>
+        Button.DOWN<br>
+        Button.LEFT<br>
+        Button.RIGHT<br>
+        Button.LB<br>
+        Button.RB<br>
+        Button.MENU<br>
+        """
         self.btn = btn
+        
     @micropython.native
     def pressed(self) -> bool:
+        """Checks if the button is currently pressed.
+
+        Returns:
+            bool: True if pressed, otherwise False.
+        """
         return self.btn.is_pressed
+    
     @micropython.native
     def justPressed(self) -> bool:
+        """Checks if the button was first pressed this frame.
+
+        Returns:
+            bool: True if this is the first frame pressed, otherwise False.
+        """
         return self.btn.is_just_pressed
 Button.A = Button(engine_io.A)
 Button.B = Button(engine_io.B)
-Button.U = Button(engine_io.UP)
-Button.D = Button(engine_io.DOWN)
-Button.L = Button(engine_io.LEFT)
-Button.R = Button(engine_io.RIGHT)
+Button.UP = Button(engine_io.UP)
+Button.DOWN = Button(engine_io.DOWN)
+Button.LEFT = Button(engine_io.LEFT)
+Button.RIGHT = Button(engine_io.RIGHT)
 Button.LB = Button(engine_io.LB)
 Button.RB = Button(engine_io.RB)
 Button.MENU = Button(engine_io.MENU)
 
 class Color:
+    """Hard-coded colors for easy reference, in RGB565. If you desire to pick your own colors, use a RGB565 picker tool such as https://rgbcolorpicker.com/565"""
+    
     BLACK = const(0x0000)
     NAVY = const(0x000F)
     DARKGREEN = const(0x03E0)
@@ -54,43 +113,83 @@ class Color:
     SKYBLUE = const(0x867D)
     VIOLET = const(0x915C)
 
-class Bitmap(TextureResource):
+class Bitmap():
+    """Wrapper class around TextureResource, for loading images."""
+    
     @micropython.native
-    def __init__(self, filepath, writable=False):
-        super().__init__(self, filepath, writable)
+    def __init__(self, filepath, key=-1, writable=False):
+        """Loads a bitmap from file.
 
-class Font(TextureResource):
+        Args:
+            filepath (string): Relative or absolute path to the bitmap file. It must be a BMP image, preferrably in RGB565 format.
+            key (int, optional): Transparency color mask, in RGB565. Defaults to -1.
+            writable (bool, optional): Set the bitmap data in RAM to be editable by the program, otherwise it will be stored in flash scratch. Defaults to False.
+        """
+        self.tex = TextureResource(filepath, writable)
+        self.width = self.tex.width
+        self.height = self.tex.height
+        self.data = self.tex.data
+        self.key = key
+
+class Font():
+    """Wrapper class around TextureResource, for loading fonts. Fonts in Classic API are not the same as in the Thumby Color engine, they more closely resemble fonts in the original Thumby API. Sample fonts are provided in the repository."""
+    
     @micropython.native
     def __init__(self, filepath, width:int, height:int, gap:int=1):
-        super().__init__(self, filepath, False)
+        self.tex = TextureResource(filepath, False)
+        self.width = self.tex.width
+        self.height = self.tex.height
+        self.data = self.tex.data
         self.width = width
         self.height = height
         self.gap = gap
 
 class Sprite:
+    """Bitmap wrapper class with stateful information, similar to the Thumby API Sprite class."""
+    
     @micropython.native
     def __init__(self, width:int, height:int, bitmap, 
-                 x:int=0, y:int=0, key:int=-1, mirrorX:int=0, mirrorY:int=0, 
+                 x:int=0, y:int=0, mirrorX:int=0, mirrorY:int=0, 
                  frame:int=0):
+        """Creates a new sprite.
+
+        Args:
+            width (int): The width of the sprite/frame.
+            height (int): The height of the sprite/frame.
+            bitmap (Bitmap): The bitmap of the sprite or spritesheet.
+            x (int, optional): Initial X position. Defaults to 0.
+            y (int, optional): Initial Y position. Defaults to 0.
+            mirrorX (int, optional): Flips sprite horizontally if set to 1. Defaults to 0.
+            mirrorY (int, optional): Flips sprite vertically if set to 1. Defaults to 0.
+            frame (int, optional): The frame in the spritesheet, starting at 0 from left to right, top to bottom. Defaults to 0.
+        """
         self.width = width
         self.height = height
         self.bitmap = bitmap
         self.x = x
         self.y = y
-        self.key = key
         self.mirrorX = mirrorX 
         self.mirrorY = mirrorY 
         self.frame = frame
 
 WIDTH = const(128)
+"""Width of the screen, in pixels."""
 HEIGHT = const(128)
+"""Height of the screen, in pixels."""
 
 class Display:
+    """Graphical calls for updating the screen with shapes and images."""
+    
     _fb = engine_draw.back_fb()
     _fbData = engine_draw.back_fb_data()
 
     @micropython.viper
     def setFPS(fps):
+        """Sets the framerate of the engine.
+
+        Args:
+            fps (int): Target framerate, otherwise 0 for unlimited framerate.
+        """
         engine.fps_limit(fps)
 
     @micropython.viper
@@ -102,6 +201,11 @@ class Display:
 
     @micropython.viper
     def fill(color:int):
+        """Fills the entire screen with a solid color.
+
+        Args:
+            color (int): In RGB565. See `Color` class for example colors.
+        """
         buf32 = ptr32(Display._fbData)
         v32 = (color<<16) | color
         for i in range((WIDTH*HEIGHT)//2):
@@ -109,32 +213,86 @@ class Display:
 
     @micropython.viper
     def setPixel(x:int, y:int, color:int):
+        """Sets a single pixel on the screen.
+
+        Args:
+            x (int): X coordinate.
+            y (int): Y coordinate.
+            color (int): In RGB565. See `Color` class for example colors.
+        """
         buf = ptr16(Display._fbData)
         buf[y*WIDTH+x] = color
     @micropython.viper
     def getPixel(x:int, y:int) -> int:
+        """Checks a single pixel on the screen that is already drawn.
+
+        Args:
+            x (int): X coordinate.
+            y (int): Y coordinate.
+
+        Returns:
+            int: The current color, in RGB565.
+        """
         buf = ptr16(Display._fbData)
         return buf[y*WIDTH+x]
 
     @micropython.native
     def drawLine(x1:int, y1:int, x2:int, y2:int, color:int):
+        """Draws a single line on the screen.
+
+        Args:
+            x1 (int): Starting X coordinate.
+            y1 (int): Starting Y coordinate.
+            x2 (int): Ending X coordinate.
+            y2 (int): Ending Y coordinate.
+            color (int): In RGB565. See `Color` class for example colors.
+        """
         Display._fb.line(x1, y1, x2, y2, color)
     @micropython.native
     def drawFilledRectangle(x:int, y:int, w:int, h:int, color:int):
+        """Draws a filled rectangle on the screen.
+
+        Args:
+            x (int): Top-left X coordinate.
+            y (int): Top-left Y coordinate.
+            w (int): Width of rectangle.
+            h (int): Height of rectangle.
+            color (int): In RGB565. See `Color` class for example colors.
+        """
         Display._fb.rect(x, y, w, h, color, True)
     @micropython.native
     def drawRectangle(x:int, y:int, w:int, h:int, color:int):
+        """Draws a rectangle outline on the screen.
+
+        Args:
+            x (int): Top-left X coordinate.
+            y (int): Top-left Y coordinate.
+            w (int): Width of rectangle.
+            h (int): Height of rectangle.
+            color (int): In RGB565. See `Color` class for example colors.
+        """
         Display._fb.rect(x, y, w, h, color, False)
 
     @micropython.viper
-    def blit(bitmap, x:int, y:int, key:int=-1, mirrorX:int=0, mirrorY:int=0):
-        buf = ptr16(_fbData)
-        width = int(bitmap.width)
-        height = int(bitmap.height)
-        bitmap = ptr16(bitmap.data)
+    def blit(bitmap, x:int, y:int, mirrorX:int=0, mirrorY:int=0):
+        """Draws a bitmap on the screen.
 
-        if x >= WIDTH or (x+width) <= 0 or \
-                y >= HEIGHT or (y+height) <= 0:
+        Args:
+            bitmap (Bitmap): The bitmap.
+            x (int): Top-left X coordinate.
+            y (int): Top-left Y coordinate.
+            mirrorX (int, optional): Flips bitmap horizontally if set to 1. Defaults to 0.
+            mirrorY (int, optional): Flips bitmap vertically if set to 1. Defaults to 0.
+        """
+        buf = ptr16(Display._fbData)
+        bmpW = int(bitmap.width)
+        bmpH = int(bitmap.height)
+        bmp = ptr16(bitmap.data)
+        key = int(bitmap.key)
+
+        w, h = bmpW, bmpH
+
+        if x >= WIDTH or (x+w) <= 0 or y >= HEIGHT or (y+h) <= 0:
             return
         
         srcX = 0
@@ -145,107 +303,139 @@ class Display:
         if x < 0:
             srcX -= x
             dstX -= x
-            width += x
-        if (x+width) >= WIDTH:
-            width -= (x+width) - WIDTH
+            w += x
+        if (x+w) >= WIDTH:
+            w -= (x+w) - WIDTH
         if y < 0:
             srcY -= y
             dstY -= y
-            height += y
-        if (y+height) >= HEIGHT:
-            height -= (y+height) - HEIGHT
-        
-        if mirrorY > 0:
-            si = (srcY+height-1) * width + srcX
-            srcGap = -width*2
+            h += y
+        if (y+h) >= HEIGHT:
+            h -= (y+h) - HEIGHT
+
+        if mirrorX and mirrorY:
+            srcX = bmpW - srcX - w
+            srcY = bmpH - srcY - h
+            si = (srcY+h-1) * bmpW + srcX + w - 1
+            srcGap = w - bmpW
+            dx = -1
+        elif mirrorX:
+            srcX = bmpW - srcX - w
+            si = srcY * bmpW + srcX + w - 1
+            srcGap = bmpW + w
+            dx = -1
+        elif mirrorY:
+            srcY = bmpH - srcY - h
+            si = (srcY+h-1) * bmpW + srcX
+            srcGap = -bmpW - w
+            dx = 1
         else:
-            si = srcY * width + srcX
-            srcGap = 0
-        if mirrorX > 0:
-            si += width-1
-            sdi = -1
-        else:
-            sdi = 1
+            si = srcY * bmpW + srcX
+            srcGap = bmpW - w
+            dx = 1        
+
         di = dstY * WIDTH + dstX
-        dstGap = WIDTH - width        
-        for _ in range(height):
-            for _ in range(width):
-                c = bitmap[si] & 0xFFFF
+        dstGap = WIDTH - w        
+        for _ in range(h):
+            for _ in range(w):
+                c = bmp[si] & 0xFFFF
                 if c != key:
                     buf[di] = c
-                si += sdi
+                si += dx
                 di += 1
             si += srcGap
             di += dstGap
     
     @micropython.viper
     def drawSprite(sprite):
+        """Draws a sprite on the screen. This can be called multpile times for the same sprite.
+
+        Args:
+            sprite (Sprite): The sprite.
+        """
         buf = ptr16(Display._fbData)
-        width = int(sprite.width)
-        height = int(sprite.height)
-        bitmap = ptr16(sprite.bitmap.data)
-        bitmapWidth = int(sprite.bitmap.width)
+        sprW = int(sprite.width)
+        sprH = int(sprite.height)
+        bmp = ptr16(sprite.bitmap.data)
+        bmpW = int(sprite.bitmap.width)
+        bmpH = int(sprite.bitmap.height)
+        key = int(sprite.bitmap.key)
         x = int(sprite.x)
         y = int(sprite.y)
-        key = int(sprite.key)
         mirrorX = int(sprite.mirrorX)
         mirrorY = int(sprite.mirrorY) 
         frame = int(sprite.frame)
 
-        if x >= WIDTH or (x+width) <= 0 or \
-                y >= HEIGHT or (y+height) <= 0:
+        w, h = sprW, sprH
+
+        if x >= WIDTH or (x+w) <= 0 or y >= HEIGHT or (y+h) <= 0:
             return
         
         if frame > 0:
-            span = bitmapWidth // width
-            row = frame // span
-            col = frame % span
-            srcX = col * width
-            srcY = row * height
+            cols = bmpW // sprW
+            row = frame // cols
+            col = frame % cols
+            sprX = col * sprW
+            sprY = row * sprH
         else:
-            srcX = 0
-            srcY = 0
+            sprX = 0
+            sprY = 0
+
+        srcX = sprX
+        srcY = sprY
         dstX = x
         dstY = y
 
         if x < 0:
             srcX -= x
             dstX -= x
-            width += x
-        if (x+width) >= WIDTH:
-            width -= (x+width) - WIDTH
+            w += x
+        if (x+w) >= WIDTH:
+            w -= (x+w) - WIDTH
         if y < 0:
             srcY -= y
             dstY -= y
-            height += y
-        if (y+height) >= HEIGHT:
-            height -= (y+height) - HEIGHT
+            h += y
+        if (y+h) >= HEIGHT:
+            h -= (y+h) - HEIGHT
         
-        if mirrorY > 0:
-            si = (srcY+height-1) * bitmapWidth + srcX
-            srcGap = width - bitmapWidth
+        if mirrorX and mirrorY:
+            srcX = (sprX + sprW) - (srcX - sprX) - w
+            srcY = (sprY + sprH) - (srcY - sprY) - h
+            si = (srcY+h-1) * bmpW + srcX + w - 1
+            srcGap = w - bmpW
+            dx = -1
+        elif mirrorX:
+            srcX = (sprX + sprW) - (srcX - sprX) - w
+            si = srcY * bmpW + srcX + w - 1
+            srcGap = bmpW + w
+            dx = -1
+        elif mirrorY:
+            srcY = (sprY + sprH) - (srcY - sprY) - h
+            si = (srcY+h-1) * bmpW + srcX
+            srcGap = -bmpW - w
+            dx = 1
         else:
-            si = srcY * bitmapWidth + srcX
-            srcGap = bitmapWidth - width
-        if mirrorX > 0:
-            si += width-1
-            sdi = -1
-        else:
-            sdi = 1
+            si = srcY * bmpW + srcX
+            srcGap = bmpW - w
+            dx = 1        
+
         di = dstY * WIDTH + dstX
-        dstGap = WIDTH - width        
-        for _ in range(height):
-            for _ in range(width):
-                c = bitmap[si] & 0xFFFF
+        dstGap = WIDTH - w        
+        for _ in range(h):
+            for _ in range(w):
+                c = bmp[si] & 0xFFFF
                 if c != key:
                     buf[di] = c
-                si += sdi
+                si += dx
                 di += 1
             si += srcGap
             di += dstGap
             
     @micropython.native
     def update():
+        """Updates the screen and waits for the next frame.
+        """
         while not engine.tick():
             pass
 
