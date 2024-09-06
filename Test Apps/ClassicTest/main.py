@@ -8,6 +8,13 @@ bmpTankTop = Bitmap("tankTop.bmp", Color.MAGENTA)
 sprTankBtm = Sprite(24, 24, bmpTankBtm)
 sprTankTop = Sprite(24, 24, bmpTankTop)
 
+fontAlien = Font("fontAlien.bmp")
+fontDrawn = Font("fontDrawn.bmp")
+fontFootball = Font("fontFootball.bmp")
+fontLarge = Font("fontLarge.bmp")
+fontMedium = Font("fontMedium.bmp")
+fontSmall = Font("fontSmall.bmp")
+
 #
 #   Test Blit
 #
@@ -108,7 +115,81 @@ def test_sprite():
 #   Test Font
 #
 def test_font():
-    pass # TODO
+    text = "The Quick Brown Fox Jumps Over The Lazy Dog!"
+    curPan = 0
+    tgtPan = 0
+    fonts = [
+        (fontLarge,"Large"),
+        (fontMedium,"Medium"),
+        (fontSmall,"Small"),
+        (fontAlien,"Alien"),
+        (fontDrawn,"Drawn"),
+        (fontFootball,"Football"),
+    ]
+    fontIndex = 0
+    colors = [
+        (Color.WHITE,"White"),
+        (Color.RED,"Red"),
+        (Color.ORANGE,"Orange"),
+        (Color.YELLOW,"Yellow"),
+        (Color.GREEN,"Green"),
+        (Color.CYAN,"Cyan"),
+        (Color.BLUE,"Blue"),
+        (Color.VIOLET,"Violet"),
+        (Color.BROWN,"Brown"),
+    ]
+    colorIndex = 0
+    outline = 1
+    gap = 1
+
+    while True:
+        # Next test
+        if Button.MENU.justPressed():
+            break
+
+        # Inputs
+        dPan = 1 if Button.RIGHT.pressed() else -1 if Button.LEFT.pressed() else 0
+        dFont = 1 if Button.DOWN.justPressed() else -1 if Button.UP.justPressed() else 0
+        dColor = 1 if Button.A.justPressed() else 0
+        dOutline = 1 if Button.B.justPressed() else 0
+        dGap = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+
+        tgtPan = max(0, min(1, tgtPan + dPan / 60))
+        fontIndex = (fontIndex + dFont + len(fonts)) % len(fonts)
+        colorIndex = (colorIndex + dColor + len(colors)) % len(colors)
+        outline = (outline + dOutline) % 2
+        gap = max(-5, min(10, gap + dGap))
+
+        # Lerp Pan
+        curPan += (tgtPan - curPan) * 0.25
+
+        font, label = fonts[fontIndex]
+        
+        Display.fill(Color.SILVER)
+
+        Display.setFont(font)
+
+        font.color = Color.WHITE
+        font.outline = 1
+        font.gap = 1
+        Display.drawText(label,64 - font.widthString(label)//2, 32-font.height//2)
+
+        font.color = colors[colorIndex][0]
+        font.outline = outline
+        font.gap = gap
+        x2 = font.widthString(text) - WIDTH
+        x = int(-x2 * curPan)
+        Display.drawText(text,x,64 - font.height//2)
+
+        fontSmall.color = Color.BLACK
+        fontSmall.outline = 0
+        fontSmall.gap = 1
+        Display.setFont(fontSmall)
+        Display.drawText(f"Color: {colors[colorIndex][1]}",2,110)
+        Display.drawText(f"Gap: {gap} Outline: {'ON' if outline else 'OFF'}",2,118)
+
+        Display.update()
+
 
 #
 #   Test Shapes

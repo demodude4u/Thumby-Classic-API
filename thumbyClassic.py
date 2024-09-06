@@ -135,14 +135,48 @@ class Font():
     """Wrapper class around TextureResource, for loading fonts. Fonts in Classic API are not the same as in the Thumby Color engine, they more closely resemble fonts in the original Thumby API. Sample fonts are provided in the repository."""
     
     @micropython.native
-    def __init__(self, filepath, width:int, height:int, gap:int=1):
+    def __init__(self, filepath, color:int=0xFFFF, outline:int=1, gap:int=1):
+        """Loads a font from file.
+
+        Font bitmaps follow a special format:
+             - Exactly 16 columns and 6 rows, monospaced
+             - White pixels are colored
+             - Black pixels are outline
+             - Magenta pixels are transparency
+             - Characters are in ASCII order, starting at code 32
+
+        Attributes such as color, outline, and gap can be changed later.
+
+        Args:
+            filepath (string): Relative or absolute path to the bitmap file. It must be a BMP image, preferrably in RGB565 format.
+            width (int): _description_
+            height (int): _description_
+            color (int, optional): In RGB565. See `Color` class for example colors. Defaults to white.
+            outline (int, optional): Shows black outline if set to 1. Defaults to 1.
+            gap (int, optional): Spacing between characters, ignoring the outside outline. Defaults to 1.
+        """
         self.tex = TextureResource(filepath, False)
-        self.width = self.tex.width
-        self.height = self.tex.height
+        self.width = self.tex.width // 16
+        self.height = self.tex.height // 6
         self.data = self.tex.data
-        self.width = width
-        self.height = height
+        self.color = color
+        self.outline = outline
         self.gap = gap
+
+    @micropython.native
+    def widthString(self, str):
+        """Calculate the pixel width of a string using this font.
+
+        Args:
+            str (string): A text string.
+
+        Returns:
+            int: The width in pixels.
+        """
+        count = len(str)
+        if count == 0:
+            return 0
+        return count * (self.width + self.gap - 2) - self.gap + 2
 
 class Sprite:
     """Bitmap wrapper class with stateful information, similar to the Thumby API Sprite class."""
@@ -182,6 +216,8 @@ class Display:
     
     _fb = engine_draw.back_fb()
     _fbData = engine_draw.back_fb_data()
+    
+    _font = None
 
     @micropython.viper
     def setFPS(fps):
@@ -191,13 +227,6 @@ class Display:
             fps (int): Target framerate, otherwise 0 for unlimited framerate.
         """
         engine.fps_limit(fps)
-
-    @micropython.viper
-    def setFont(font):
-        pass #TODO
-    @micropython.viper
-    def drawText(string, x:int, y:int, color:int):
-        pass #TODO
 
     @micropython.viper
     def fill(color:int):
@@ -431,6 +460,102 @@ class Display:
                 di += 1
             si += srcGap
             di += dstGap
+
+    @micropython.native
+    def setFont(font):
+        """Set the font to be used by `Display.drawText`. Attributes such as color, outline, and gap are set in `font`.
+
+        Args:
+            font (Font): The font to use.
+        """
+        Display._font = font
+    @micropython.viper
+    def drawText(text, x:int, y:int):
+        """Draw text on the screen. Set the font with `Display.setFont`. Attributes such as color, outline, and gap are set in the font.
+
+        Args:
+            text (string): The text to show on the screen.
+            x (int): Top-left X coordinate.
+            y (int): Top-left Y coordinate.
+        """
+        buf = ptr16(Display._fbData)
+        font = Display._font
+        sprW = int(font.width)
+        sprH = int(font.height)
+        bmp = ptr16(font.data)
+        bmpW = int(font.tex.width)
+        bmpH = int(font.tex.height)
+        alphaKey = int(Color.MAGENTA)
+        colorKey = int(Color.WHITE)
+        outlineKey = int(Color.BLACK)
+        x1 = int(x)
+        y1 = int(y)
+        color = int(font.color)
+        outline = int(font.outline)
+        gap = int(font.gap) - 2
+
+        if color == colorKey:
+            colorKey = -1
+        if outline != 0:
+            outlineKey = -1
+
+        if int(len(text)) == 0:
+            return
+
+        if y1 > HEIGHT or (y1+sprH) <= 0:
+            return
+
+        for char in text:
+            if x1 >= WIDTH or (x1+sprW) <= 0:
+                x1 += sprW + gap
+                continue
+        
+            x, y = x1, y1
+            w, h = sprW, sprH
+
+            frame = int(ord(char)) - 32
+            row = frame >> 4
+            col = frame & 0xF
+            sprX = col * sprW
+            sprY = row * sprH
+
+            srcX = sprX
+            srcY = sprY
+            dstX = x
+            dstY = y
+
+            if x < 0:
+                srcX -= x
+                dstX -= x
+                w += x
+            if (x+w) >= WIDTH:
+                w -= (x+w) - WIDTH
+            if y < 0:
+                srcY -= y
+                dstY -= y
+                h += y
+            if (y+h) >= HEIGHT:
+                h -= (y+h) - HEIGHT
+            
+            si = srcY * bmpW + srcX
+            srcGap = bmpW - w
+            dx = 1        
+
+            di = dstY * WIDTH + dstX
+            dstGap = WIDTH - w        
+            for _ in range(h):
+                for _ in range(w):
+                    c = bmp[si] & 0xFFFF
+                    if c != alphaKey and c != outlineKey:
+                        if c == colorKey:
+                            c = color
+                        buf[di] = c
+                    si += dx
+                    di += 1
+                si += srcGap
+                di += dstGap
+
+            x1 += sprW + gap
             
     @micropython.native
     def update():
