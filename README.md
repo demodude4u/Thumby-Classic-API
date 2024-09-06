@@ -21,9 +21,8 @@ The project is still under active development, and several features are yet to b
   - **Font rendering** based on custom font files.
 
 - **Colors**  
-  Predefined RGB565 colors are available for convenience, and you can define custom colors if needed.  
-  Examples of predefined colors:
-  - `BLACK`, `WHITE`, `RED`, `BLUE`, `GREEN`, `YELLOW`, etc.
+  Use a color picker tool (https://rgbcolorpicker.com/565) to define colors. Predefined RGB565 colors are available for convenience.
+  - Examples of predefined colors: `BLACK`, `WHITE`, `RED`, `BLUE`, `GREEN`, `YELLOW`, etc.
 
 - **Basic Drawing Commands**
   - `fill()`: Fills the entire screen with a solid color.
@@ -38,12 +37,7 @@ The project is still under active development, and several features are yet to b
 
 - **Fonts**  
   Load and render custom fonts with support for ASCII character mapping. Fonts follow a custom bitmap format and can include outlines and adjustable gaps between characters.
-
-- **Audio (TODO)**  
-  A placeholder for playing audio. The functionality is currently under development.
-
-- **Link and Save Data (TODO)**  
-  Networking and persistent save data are in progress.
+  - A font must be loaded by the game if text is used, there is no default font.
 
 ## Getting Started
 
@@ -58,21 +52,54 @@ The project is still under active development, and several features are yet to b
    from thumbyClassic import *
    ```
 
-## Differences from the Original Thumby API
+## Function Mapping from Original Thumby API to Classic API
 
-While the Thumby Color Classic API attempts to stay as close as possible to the original Thumby API, there are some key differences due to hardware capabilities and optimizations:
-- Full RGB565 color support for graphics and text.
-- Different handling of fonts and sprites, with a focus on better customization.
-- New functionality for networking and persistent data (still in development).
-
-A detailed conversion guide from the original Thumby API to the Classic API will be provided soon.
-
-## Roadmap
-
-- Complete audio support
-- Implement networking (Link class)
-- Finalize persistent save data (SaveData class)
-- Add more graphical primitives and optimizations
+| **Thumby API**                             | **Classic API**                                  | **Comments**                       |
+|--------------------------------------------|--------------------------------------------------|------------------------------------|
+| `reset()`                                  | TODO                                             |                                    |
+| `buttonX.pressed()`                        | `Button.X.pressed()`                             |                                    |
+| `buttonX.justPressed()`                    | `Button.X.justPressed()`                         |                                    |
+| `inputPressed()`                           | TODO                                             |                                    |
+| `inputJustPressed()`                       | TODO                                             |                                    |
+| `dpadPressed()`                            | TODO                                             |                                    |
+| `dpadJustPressed()`                        | TODO                                             |                                    |
+| `actionPressed()`                          | TODO                                             |                                    |
+| `actionJustPressed()`                      | TODO                                             |                                    |
+|                                            | `Font(filepath, color=0xFFFF, outline=1, gap=1)` | Load BMP Font files (RGB565)       |
+| `display.drawText(text, x, y, color)`      | `Display.drawText(text, x, y)`                   | Color is now set in the `Font` class. |
+| `display.setFont(fontFilePath, width, height, space)`|`Display.setFont(font)`                 | Space (Gap) is now set in the `Font` class. |
+| `display.width`                            | `WIDTH`                                          |                                    |
+| `display.height`                           | `HEIGHT`                                         |                                    |
+| `display.update()`                         | `Display.update()`                               |                                    |
+| `display.setFPS(fps)`                      | `Display.setFPS(fps)`                            |                                    |
+| `display.fill(color)`                      | `Display.fill(color)`                            |                                    |
+| `display.brightness(brightness)`           | TODO                                             |                                    |
+| `display.setPixel(x, y, color)`            | `Display.setPixel(x, y, color)`                  |                                    |
+| `display.getPixel(x, y)`                   | `Display.getPixel(x, y)`                         |                                    |
+| `display.drawLine(x1, y1, x2, y2, color)`  | `Display.drawLine(x1, y1, x2, y2, color)`        |                                    |
+| `display.drawFilledRectangle(x, y, w, h, color)` | `Display.drawFilledRectangle(x, y, width, height, color)` |                     |
+| `display.drawRectangle(x, y, w, h, color)` | `Display.drawRectangle(x, y, width, height, color)` |                                 |
+|                                            | `Bitmap(filepath, key=-1, writable=False)`       | Load BMP files (RGB565)            |
+| `display.blit(bitmapData, x, y, w, h, key, mirrorX, mirrorY)` | `Display.blit(bitmap, x, y, mirrorX=0, mirrorY=0)` | Key is now set in the `Bitmap` class. |
+| `display.blitWithMask(bitmapData, x, y, width, height, key, mirrorX, mirrorY, maskBitmapData)` || Use `Bitmap.key` instead.        |
+| `Sprite(width, height, bitmapData, x=0, y=0, key=0  mirrorX=0, mirrorY=0)` | `Sprite(width, height, bitmap, x=0, y=0, mirrorX=0, mirrorY=0, frame=0)` ||
+| `Sprite.getFrame`, `Sprite.setFrame(frame)`| `Sprite.frame`                                   |                                    |
+| `display.drawSprite(sprite)`               | `Display.drawSprite(sprite)`                     |                                    |
+| `display.drawSpriteWithMask(sprite, maskSprite)` |                                            | Use `Bitmap.key` instead.          |
+| `audio.play(freq, duration)`               | TODO                                             |                                    |
+| `audio.playBlocking(freq, duration)`       | TODO                                             |                                    |
+| `audio.stop()`                             | TODO                                             |                                    |
+| `audio.setEnabled()`                       | TODO                                             |                                    |
+| `audio.set(freq)`                          | TODO                                             |                                    |
+| `link.send(data)`                          | TODO                                             |                                    |
+| `link.receive()`                           | TODO                                             |                                    |
+| `saveData.setName(name)`                   | TODO                                             |                                    |
+| `saveData.setItem(key, value)`             | TODO                                             |                                    |
+| `saveData.getItem(key)`                    | TODO                                             |                                    |
+| `saveData.hasItem(key)`                    | TODO                                             |                                    |
+| `saveData.delItem(key)`                    | TODO                                             |                                    |
+| `saveData.save()`                          | TODO                                             |                                    |
+| `saveData.getName()`                       | TODO                                             |                                    |
 
 ## Contributions
 
