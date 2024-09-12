@@ -47,7 +47,7 @@ class DisplayEx:
             ra, mx = angle, 0
         elif angle <= 270:
             ra, mx = 180 - angle, 1
-            x -= 2 * ((w >> 1) - pivotX)
+            x -= 2 * ((bmpW >> 1) - pivotX)
         else:
             ra, mx = angle - 360, 0
 
