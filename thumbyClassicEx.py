@@ -43,14 +43,11 @@ class DisplayEx:
         cosLookup = ptr32(DisplayEx._cos_f10)
         tanLookup = ptr32(DisplayEx._tan_f10)
 
-        dirDelta = ((angle + 22) // 45) & 0b111
-
         if angle < 90:
             ra, mx = angle, 0
         elif angle <= 270:
             ra, mx = 180 - angle, 1
             x -= 2 * ((w >> 1) - pivotX)
-            dirDelta = dirFlip[dirDelta]
         else:
             ra, mx = angle - 360, 0
 
