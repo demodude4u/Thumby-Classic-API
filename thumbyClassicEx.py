@@ -1,34 +1,22 @@
-
-import engine_main
-
 import engine
 import engine_io
 import engine_draw
 
 import math
+import array
 
 WIDTH = const(128)
 """Width of the screen, in pixels."""
 HEIGHT = const(128)
 """Height of the screen, in pixels."""
 
-# Bug Workaround - linux builds do not ptr address array.array correctly in viper
-@micropython.viper
-def _bugworkaround_array32(list):
-    ret = bytearray(int(len(list))*4)
-    buf = ptr32(ret)
-    for i in range(int(len(list))):
-        buf[i] = int(list[i])
-    return ret
-
 class DisplayEx:
     
     _fb = engine_draw.back_fb()
     _fbData = engine_draw.back_fb_data()
     
-    _sin_f10 = _bugworkaround_array32([int(math.sin(math.radians(x)) * 1024) for x in range(-90, 91)])
-    _cos_f10 = _bugworkaround_array32([int(math.cos(math.radians(x)) * 1024) for x in range(-90, 91)])
-    _tan_f10 = _bugworkaround_array32([int(math.tan(math.radians(x / 2)) * 1024) for x in range(-90, 91)])
+    _sin_f10 = array.array('h',[int(math.sin(math.radians(x)) * 1024)+1024 for x in range(-90, 91)])
+    _tan_f10 = array.array('h',[int(math.tan(math.radians(x / 2)) * 1024)+1024 for x in range(-90, 91)])
     
     @micropython.viper
     def blitRotate(bitmap, angle: int, x: int, y: int, pivotX: int, pivotY: int):
@@ -39,36 +27,34 @@ class DisplayEx:
         bmp = ptr16(bitmap.data)
         key = int(bitmap.key)
         
-        sinLookup = ptr32(DisplayEx._sin_f10)
-        cosLookup = ptr32(DisplayEx._cos_f10)
-        tanLookup = ptr32(DisplayEx._tan_f10)
+        sinLookup = ptr16(DisplayEx._sin_f10)
+        tanLookup = ptr16(DisplayEx._tan_f10)
 
         if angle < 90:
-            ra, mx = angle, 0
+            ra, flip = angle, 0
         elif angle <= 270:
-            ra, mx = 180 - angle, 1
+            ra, flip = 180 - angle, 1
             x -= 2 * ((bmpW >> 1) - pivotX)
         else:
-            ra, mx = angle - 360, 0
+            ra, flip = angle - 360, 0
 
         # Determine rendering mode
-        if 10 < ra < 80 or -80 < ra < -10:
-            rmode = 0
-            shx_f10 = -tanLookup[ra + 90]
-            shy_f10 = sinLookup[ra + 90]
-        elif ra == 0:
+        if ra == 0:
             rmode = 1
         elif ra == 90:
             rmode = 2
         elif ra == -90:
             rmode = 3
         else:
-            rmode = 4
-            cos_f10 = cosLookup[ra + 90]
-            sin_f10 = sinLookup[ra + 90]
+            rmode = 0
+            shx_f10 = -(tanLookup[ra + 90]-1024)
+            shy_f10 = sinLookup[ra + 90]-1024
 
         si = 0
         for srcY in range(bmpH):
+            if flip:
+                srcY = bmpH - 1 - srcY
+            
             for srcX in range(bmpW):
                 c = bmp[si] & 0xFFFF
                 
@@ -99,17 +85,7 @@ class DisplayEx:
                     rx = pivotX + srcY - pivotY
                     ry = pivotY - srcX + pivotX
 
-                elif rmode == 4:  # Nearest-neighbor rotation for smaller angles
-                    dx = srcX - pivotX
-                    dy = srcY - pivotY
-
-                    rx = (cos_f10 * dx - sin_f10 * dy) >> 10
-                    ry = (cos_f10 * dy + sin_f10 * dx) >> 10
-
-                    rx += pivotX
-                    ry += pivotY
-
-                if mx:
+                if flip:
                     dstX = x + (bmpW - rx)
                 else:
                     dstX = x + rx

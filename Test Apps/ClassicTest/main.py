@@ -1,9 +1,11 @@
 from thumbyClassic import *
+from thumbyClassicEx import *
 
 bmpBG = Bitmap("bg.bmp")
 bmpLogo = Bitmap("logo.bmp", Color.MAGENTA)
 bmpTankBtm = Bitmap("tankBtm.bmp", Color.MAGENTA)
 bmpTankTop = Bitmap("tankTop.bmp", Color.MAGENTA)
+bmpKoranot = Bitmap("koranot.bmp", Color.MAGENTA)
 
 sprTankBtm = Sprite(24, 24, bmpTankBtm)
 sprTankTop = Sprite(24, 24, bmpTankTop)
@@ -196,12 +198,40 @@ def test_font():
 #
 def test_shapes():
     pass # TODO
+
+#
+#   Test Ex Rotate
+#
+def test_ex_rotate():
+    angle = 0
+    dAngle = 0
+    
+    while True:
+        # Next test
+        if Button.MENU.justPressed():
+            break
+        
+        acc = 1 if Button.RIGHT.pressed() else -1 if Button.LEFT.pressed() else 0
+        if acc == 0:
+            acc = -1 if dAngle > 0 else 1 if dAngle < 0 else 0
+        
+        dAngle = max(-5,min(5,dAngle+acc))
+        angle = (angle + dAngle + 360) % 360
+        
+        Display.fill(Color.DARKGREEN)
+        
+        hw = bmpKoranot.width//2
+        hh = bmpKoranot.height//2
+        DisplayEx.blitRotate(bmpKoranot,angle,64-hw,64-hh,hw,hh)
+        
+        Display.update()
        
 tests = [
     test_blit,
     test_sprite,
     test_font,
     test_shapes,
+    test_ex_rotate,
 ]
 
 Display.setFPS(30)
