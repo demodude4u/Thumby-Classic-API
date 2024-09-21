@@ -27,8 +27,9 @@ def test_blit():
     
     while True:
         # Next test
-        if Button.MENU.justPressed():
-            break
+        dTest = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        if dTest:
+            return dTest
         
         # Bounce around the screen
         x += dx
@@ -74,13 +75,14 @@ def test_sprite():
    
     while True:
         # Next test
-        if Button.MENU.justPressed():
-            break
+        dTest = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        if dTest:
+            return dTest
         
         # Player controls
         dx = 1 if Button.RIGHT.pressed() else -1 if Button.LEFT.pressed() else 0
         dy = 1 if Button.DOWN.pressed() else -1 if Button.UP.pressed() else 0
-        daim = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        daim = 1 if Button.B.justPressed() else 0
         fire = Button.A.justPressed()
         
         # Screen boundaries
@@ -146,21 +148,23 @@ def test_font():
 
     while True:
         # Next test
-        if Button.MENU.justPressed():
-            break
+        dTest = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        if dTest:
+            return dTest
 
         # Inputs
         dPan = 1 if Button.RIGHT.pressed() else -1 if Button.LEFT.pressed() else 0
-        dFont = 1 if Button.DOWN.justPressed() else -1 if Button.UP.justPressed() else 0
+        dFont = 1 if Button.B.justPressed() else 0
         dColor = 1 if Button.A.justPressed() else 0
-        dOutline = 1 if Button.B.justPressed() else 0
-        dGap = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        dGap = 1 if Button.UP.justPressed() else -1 if Button.DOWN.justPressed() else 0
 
         tgtPan = max(0, min(1, tgtPan + dPan / 60))
         fontIndex = (fontIndex + dFont + len(fonts)) % len(fonts)
         colorIndex = (colorIndex + dColor + len(colors)) % len(colors)
-        outline = (outline + dOutline) % 2
         gap = max(-5, min(10, gap + dGap))
+
+        if dFont and fontIndex == 0:
+            outline = (outline + 1) % 2
 
         # Lerp Pan
         curPan += (tgtPan - curPan) * 0.25
@@ -208,8 +212,9 @@ def test_ex_rotate():
     
     while True:
         # Next test
-        if Button.MENU.justPressed():
-            break
+        dTest = 1 if Button.RB.justPressed() else -1 if Button.LB.justPressed() else 0
+        if dTest:
+            return dTest
         
         acc = 1 if Button.RIGHT.pressed() else -1 if Button.LEFT.pressed() else 0
         if acc == 0:
@@ -230,12 +235,12 @@ tests = [
     test_blit,
     test_sprite,
     test_font,
-    test_shapes,
+    # test_shapes,
     test_ex_rotate,
 ]
+testIndex = 0
 
 Display.setFPS(30)
 while True:
-    for test in tests:
-        test()
-        Display.update()
+    testIndex = (testIndex + tests[testIndex]() + len(tests)) % len(tests)
+    Display.update()
